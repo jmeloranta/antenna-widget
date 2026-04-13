@@ -1,0 +1,50 @@
+To set antennas (\r terminated):
+
+[R29T09HAABBCCDDEEFFGGHHIIJJKKLL]     09 = set simple antenna, 29 = destination (bm5)
+
+AA = 160m antenna number
+BB = 80m antenna number
+CC = 75m antenna number
+DD = 60m antenna number
+EE = 40m antenna number
+FF = 30m antenna number
+GG = 20m antenna number
+HH = 17m antenna number
+II = 15m antenna number
+JJ = 12m antenna number
+KK = 10m antenna number
+LL = 6m antenna number
+
+Antennas:
+
+1 = 6m beam (relay 1)
+2 = WARC beam (relay 2)
+3 = Stack (relay 3)
+4 = 40m (relay 4)
+5 = No antenna (relay 5)
+6 = BOG NE (no relays)
+7 = BOG SW (relay 9)
+8 = BOG NW (relay 10)
+9 = BOG SE (relay 11)
+
+To select BOG-NE: [R29T09H060606060402030203020301]
+To select BOG-SW: [R29T09H070707070402030203020301]
+To select BOG-NW: [R29T09H080808080402030203020301]
+To select BOG-SE: [R29T09H090909090402030203020301]
+
+Relay info in status msg is a bitmap for relays active.
+
+Commands in packets: T, R, H, M
+
+Start with [
+Txx = command
+Rxx = packet dest?
+Rxxxx = packet dest and source
+Hxx  = channel but in sending command has the data?!
+M = packet data in hex until ]
+
+from device:
+[TxxRxxyyHzzM....]
+
+to device:
+[TxxRyyH....]

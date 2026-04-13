@@ -1,0 +1,70 @@
+Coax colors labels:
+White = lowest tribander
+Red = 6 m           (antenna 1)
+blue = warc         (antenna 2)
+green = 40m beam    (antenna 4)
+two whites = top tribander
+no label = from stack match (antenna 3)
+
+Green heron settings:
+calibrate = 86        (change for recalibrating direction)
+offset = 180
+Delays = 3
+Min speed = 5      (Changed to 9 to avoid computer timeouts; 10 does not work)
+Max speed = 10
+CCW Limit = 180
+CW limit = 180
+Option = counter
+Divide hi = 5700
+Divide lo = 5700
+Knob time = 40
+Mode = normal
+Ramp = 3
+Bright = 8
+
+Stack match cable:
+IN 	Orange
+1	Brown
+3	Blue
+G	Black
+(A and phi no connection, 2 not connected)
+
+Antenna switch cable:
+Ground(1) Black
+Relay 1  Blue (DXE antenna 1)
+Relay 2  Orange (DXE antenna 2)
+Relay 3  Brown (DXE antenna 3)
+Relay 4  Green (DXE antenna 4)
+Relay 5  White (DXE antenna 5; not in use)
+Relay 6  Yellow (DXEantenna 6; not in use)
+Relay 7  Red (DXE antenna 7; not in use)
+Relay 8  Not connected (DXE reserved for relay 8) / FREE
+Relay 9  BOG SE (RX antenna 2)
+Relay 10 BOG NW (RX antenna 3)
+Relay 11 BOG SE (RX antenna 4)
+Relay 12 FREE
+
+Bandmaster V:
+Antenna 1 = 6m beam
+Antenna 2 = WARC
+Antenna 3 = Stack
+Antenna 4 = 40m beam
+Antenna 5 = No antenna
+Antenna 6 = BOG NE
+Antenna 7 = BOG SW
+Antenna 8 = BOG NW
+Antenna 9 = BOG SE
+
+BM5 (on com36):
+Radio Kenwood (IF)
+Baud rate 9600
+Radio Polling enabled
+Radio Timeout enabled
+Auto on Band Change enabled
+Aux RS-232 output disabled
+
+RX BOG antenna switch cable (no power = Ant 1 / BOG NE):
+Ground(2) Black
+Relay 9   Ant 2 / Blue (BOG SW)
+Relay 10  Ant 3 / Orange (BOG NW)
+Relay 11  Ant 4 / Brown (BOG SE)
