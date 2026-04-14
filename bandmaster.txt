@@ -48,3 +48,14 @@ from device:
 
 to device:
 [TxxRyyH....]
+
+band decoder:
+
+[T13RFA29H00M010A01016153]^M
+
+T13 = band decoder
+M:
+01 = radio #?
+0A = band or antenna?
+01016153 = freq
+

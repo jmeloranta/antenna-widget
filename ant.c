@@ -52,8 +52,8 @@ char *stack_match[] = {"No antenna", "Top antenna", "Mid antenna", "Top+mid ante
 char *bogs[] = {"[R29T09H060606060402030203020301]\r", "[R29T09H070707070402030203020301]\r",
                 "[R29T09H080808080402030203020301]\r", "[R29T09H090909090402030203020301]\r"};
 
-int fd, tx_on = 0;
-GtkWidget *ant, *sm;
+int fd, tx_on = 0, band_data = 0;
+GtkWidget *band, *ant, *sm;
 
 struct packet {
   unsigned char cmd;
@@ -163,7 +163,50 @@ static gboolean update_band_info(void *asd) {
     gtk_label_set_markup(GTK_LABEL(sm), buf);
     break;
   case 0x13: // decoder data
-    printf("Decoder data ignored.\n");
+//    printf("Decoder data received: %02x %02x %02x %02x %02x %02x.\n", packet.data[0], packet.data[1], packet.data[2], packet.data[3], packet.data[4], packet.data[5]);
+    switch(packet.data[3]) {
+      case 0x31:
+        band_data = 160;
+        break;
+      case 0x32:
+        band_data = 80;
+        break;
+      case 0x34:
+        band_data = 60;
+        break;
+      case 0x35:
+        band_data = 40;
+        break;
+      case 0x36:
+        band_data = 30;
+        break;
+      case 0x37:
+        band_data = 20;
+        break;
+      case 0x38:
+        band_data = 17;
+        break;
+      case 0x39:
+        band_data = 15;
+        break;
+      case 0x41:
+        band_data = 12;
+        break;
+      case 0x42:
+        band_data = 10;
+        break;
+      case 0x43:
+        band_data = 6;
+        break;
+      default:
+        band_data = 0;
+        break;
+    }
+    sprintf(buf, "<span color='blue'>%d m</span>", band_data);
+    gtk_label_set_markup(GTK_LABEL(band), buf);
+    break;
+  case 0xa3:
+    printf("Antenna settings updated.\n");
     break;
   default:
     printf("Unknown packet (%x) - ignored.\n", packet.cmd);
@@ -178,6 +221,7 @@ void closewin(GtkWidget *win, gpointer data) {
 
 void bog_ne(GtkWidget *win, gpointer data) {
 
+  if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG NE selected\n");
     write(fd, bogs[0], strlen(bogs[0]));
@@ -186,6 +230,7 @@ void bog_ne(GtkWidget *win, gpointer data) {
 
 void bog_sw(GtkWidget *win, gpointer data) {
 
+  if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG SW selected\n");
     write(fd, bogs[1], strlen(bogs[1]));
@@ -194,6 +239,7 @@ void bog_sw(GtkWidget *win, gpointer data) {
 
 void bog_nw(GtkWidget *win, gpointer data) {
 
+  if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG NW selected\n");
     write(fd, bogs[2], strlen(bogs[2]));
@@ -202,6 +248,7 @@ void bog_nw(GtkWidget *win, gpointer data) {
 
 void bog_se(GtkWidget *win, gpointer data) {
 
+  if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG SE selected\n");
     write(fd, bogs[3], strlen(bogs[3]));
@@ -211,7 +258,7 @@ void bog_se(GtkWidget *win, gpointer data) {
 int main(int argc, char *argv[]) {
 
   GtkWidget *window;
-  GtkWidget *ant_label, *sm_label, *hbox1, *hbox2, *hbox3, *vbox, *button1, *button2, *button3, *button4;
+  GtkWidget *band_label, *ant_label, *sm_label, *hbox1, *hbox2, *hbox3, *hbox4, *vbox, *button1, *button2, *button3, *button4;
 
   gtk_init(&argc, &argv);
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -220,40 +267,53 @@ int main(int argc, char *argv[]) {
   gtk_window_set_default_size(GTK_WINDOW(window), 350, 80);
   g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(closewin), NULL);
 
+  band_label = gtk_label_new("Band:");
+  gtk_label_set_xalign(GTK_LABEL(band_label), 0.0); // 0 = left, 1 = right
+
   ant_label = gtk_label_new("Antenna:");
   gtk_label_set_xalign(GTK_LABEL(ant_label), 0.0); // 0 = left, 1 = right
-  sm_label =  gtk_label_new("Stack match:");
+
+  sm_label = gtk_label_new("Stack match:");
   gtk_label_set_xalign(GTK_LABEL(sm_label), 0.0);
+
+  band = gtk_label_new("-----");
+  gtk_label_set_xalign(GTK_LABEL(band), 0.5);
+
   ant = gtk_label_new("-----");
   gtk_label_set_xalign(GTK_LABEL(ant), 0.5);
+
   sm = gtk_label_new("-----");
   gtk_label_set_xalign(GTK_LABEL(sm), 0.5);
 
   hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   hbox3 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+  hbox4 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   
   vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
 
-  gtk_box_pack_start(GTK_BOX(hbox1), ant_label, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox1), ant, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox1), band_label, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox1), band, TRUE, TRUE, 5);
 
-  gtk_box_pack_start(GTK_BOX(hbox2), sm_label, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox2), sm, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox2), ant_label, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox2), ant, TRUE, TRUE, 5);
 
-  gtk_box_pack_start(GTK_BOX(vbox), hbox1, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(vbox), hbox2, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox3), sm_label, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox3), sm, TRUE, TRUE, 5);
 
   button1 = gtk_button_new_with_label("BOG NE");
   button2 = gtk_button_new_with_label("BOG SW");
   button3 = gtk_button_new_with_label("BOG NW");
   button4 = gtk_button_new_with_label("BOG SE");
-  gtk_box_pack_start(GTK_BOX(hbox3), button1, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox3), button2, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox3), button3, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox3), button4, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox4), button1, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox4), button2, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox4), button3, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox4), button4, TRUE, TRUE, 5);
 
+  gtk_box_pack_start(GTK_BOX(vbox), hbox1, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(vbox), hbox2, TRUE, TRUE, 5);
   gtk_box_pack_start(GTK_BOX(vbox), hbox3, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(vbox), hbox4, TRUE, TRUE, 5);
 
   gtk_container_add(GTK_CONTAINER(window), vbox);
   g_signal_connect(button1, "clicked", G_CALLBACK(bog_ne), NULL);
