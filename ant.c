@@ -214,11 +214,6 @@ static gboolean update_band_info(void *asd) {
   return 1;
 }
 
-void closewin(GtkWidget *win, gpointer data) {
-
-  gtk_main_quit();
-}
-
 void bog_ne(GtkWidget *win, gpointer data) {
 
   if(band_data < 60) return;
@@ -260,12 +255,10 @@ int main(int argc, char *argv[]) {
   GtkWidget *window;
   GtkWidget *band_label, *ant_label, *sm_label, *hbox1, *hbox2, *hbox3, *hbox4, *vbox, *button1, *button2, *button3, *button4;
 
-  gtk_init(&argc, &argv);
-  window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_init();
+  window = gtk_window_new();
   gtk_window_set_title(GTK_WINDOW(window), "Antenna Status");
-  gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-  gtk_window_set_default_size(GTK_WINDOW(window), 350, 80);
-  g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(closewin), NULL);
+  gtk_window_set_default_size(GTK_WINDOW(window), 300, 80);
 
   band_label = gtk_label_new("Band:");
   gtk_label_set_xalign(GTK_LABEL(band_label), 0.0); // 0 = left, 1 = right
@@ -277,12 +270,15 @@ int main(int argc, char *argv[]) {
   gtk_label_set_xalign(GTK_LABEL(sm_label), 0.0);
 
   band = gtk_label_new("-----");
+  gtk_widget_set_hexpand(GTK_WIDGET(band), TRUE);
   gtk_label_set_xalign(GTK_LABEL(band), 0.5);
 
   ant = gtk_label_new("-----");
+  gtk_widget_set_hexpand(GTK_WIDGET(ant), TRUE);
   gtk_label_set_xalign(GTK_LABEL(ant), 0.5);
 
   sm = gtk_label_new("-----");
+  gtk_widget_set_hexpand(GTK_WIDGET(sm), TRUE);
   gtk_label_set_xalign(GTK_LABEL(sm), 0.5);
 
   hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
@@ -292,30 +288,36 @@ int main(int argc, char *argv[]) {
   
   vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
 
-  gtk_box_pack_start(GTK_BOX(hbox1), band_label, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox1), band, TRUE, TRUE, 5);
+  gtk_box_append(GTK_BOX(hbox1), band_label);
+  gtk_box_append(GTK_BOX(hbox1), band);
 
-  gtk_box_pack_start(GTK_BOX(hbox2), ant_label, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox2), ant, TRUE, TRUE, 5);
+  gtk_box_append(GTK_BOX(hbox2), ant_label);
+  gtk_box_append(GTK_BOX(hbox2), ant);
 
-  gtk_box_pack_start(GTK_BOX(hbox3), sm_label, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox3), sm, TRUE, TRUE, 5);
+  gtk_box_append(GTK_BOX(hbox3), sm_label);
+  gtk_box_append(GTK_BOX(hbox3), sm);
 
   button1 = gtk_button_new_with_label("BOG NE");
   button2 = gtk_button_new_with_label("BOG SW");
   button3 = gtk_button_new_with_label("BOG NW");
   button4 = gtk_button_new_with_label("BOG SE");
-  gtk_box_pack_start(GTK_BOX(hbox4), button1, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox4), button2, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox4), button3, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox4), button4, TRUE, TRUE, 5);
+  gtk_widget_set_hexpand(GTK_WIDGET(button1), TRUE);
+  gtk_widget_set_hexpand(GTK_WIDGET(button2), TRUE);
+  gtk_widget_set_hexpand(GTK_WIDGET(button3), TRUE);
+  gtk_widget_set_hexpand(GTK_WIDGET(button4), TRUE);
 
-  gtk_box_pack_start(GTK_BOX(vbox), hbox1, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(vbox), hbox2, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(vbox), hbox3, TRUE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(vbox), hbox4, TRUE, TRUE, 5);
+  gtk_box_append(GTK_BOX(hbox4), button1);
+  gtk_box_append(GTK_BOX(hbox4), button2);
+  gtk_box_append(GTK_BOX(hbox4), button3);
+  gtk_box_append(GTK_BOX(hbox4), button4);
 
-  gtk_container_add(GTK_CONTAINER(window), vbox);
+  gtk_box_append(GTK_BOX(vbox), hbox1);
+  gtk_box_append(GTK_BOX(vbox), hbox2);
+  gtk_box_append(GTK_BOX(vbox), hbox3);
+  gtk_box_append(GTK_BOX(vbox), hbox4);
+
+  gtk_window_set_child(GTK_WINDOW(window), vbox);
+
   g_signal_connect(button1, "clicked", G_CALLBACK(bog_ne), NULL);
   g_signal_connect(button2, "clicked", G_CALLBACK(bog_sw), NULL);
   g_signal_connect(button3, "clicked", G_CALLBACK(bog_nw), NULL);
@@ -331,8 +333,10 @@ int main(int argc, char *argv[]) {
 
   g_timeout_add(UPDATE, update_band_info, NULL);
 
-  gtk_widget_show_all(window);
-  gtk_main();
+  gtk_widget_set_visible(window, TRUE);
+
+  while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0) // Main iteration loop
+    g_main_context_iteration(NULL, TRUE);
 
   close(fd);
   return 0;
