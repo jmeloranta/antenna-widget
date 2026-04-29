@@ -1,3 +1,9 @@
+/* 
+ * NOTE: This program will not be directly useful anywhere else except in my station.
+ *       It is provided as an example how to program Bandmaster V.
+ *
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
