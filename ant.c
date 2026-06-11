@@ -70,7 +70,7 @@ struct packet {
   unsigned char data[256];
 };
 
-int read_untilcr(int fd, char *buf, int maxlen) {
+int read_untilcr(char *buf, int maxlen) {
   
   int pos = 0, bytes_rd;
   
@@ -134,7 +134,7 @@ static gboolean update_band_info(void *asd) {
   struct packet packet;
   char buf[512];
   
-  if((len = read_untilcr(fd, buf, sizeof(buf))) < 0) {
+  if((len = read_untilcr(buf, sizeof(buf))) < 0) {
     fprintf(stderr, "Read error.\n");
     exit(1);
   }
