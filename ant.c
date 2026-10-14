@@ -41,6 +41,43 @@ char *stack_match[] = {"No antenna", "Top antenna", "Mid antenna", "Top+mid ante
                        "Bottom antenna", "Top+bot antennas", "Mid+bot antennas",
                        "All antennas", "AUX", "Unknown", "Phase"}; 
 
+GtkWidget *button5;
+
+/*
+ * Turn 160 m preamp on / off by turning the power on / off with H5080 smart plug
+ * using bluetooth. KD9SV preamp has only a manual switch, which cannot be controlled with computer.
+ *
+ * This program uses external program called rs (modified from python code) to do the actual work. Use that program
+ * to get the key from the plug and enter it below (in hex). To get rs working, you will need the bluetooth
+ * MAC address for the plug (see rs.c).
+ *
+ */
+
+#define RS "/usr/local/bin/rs"
+
+#define KEY1 "0xff"
+#define KEY2 "0xff"
+#define KEY3 "0xff"
+
+void set_preamp_state(int state) {
+
+  char buf[512];
+
+  if(!state) sprintf(buf, "%s off %s %s %s", RS, KEY1, KEY2, KEY3);
+  else sprintf(buf, "%s on %s %s %s", RS, KEY1, KEY2, KEY3);
+  puts(buf);
+//  system(buf);
+}
+
+void set_preamp(GtkWidget *win, gpointer data) {
+
+  static char stat = 0;
+
+  stat = !stat;
+  gtk_button_set_label(GTK_BUTTON(button5), stat?"ON":"OFF");
+  set_preamp_state(stat);
+}
+
 /*
  * RX antenna control:
  *
@@ -259,12 +296,12 @@ void bog_se(GtkWidget *win, gpointer data) {
 int main(int argc, char *argv[]) {
 
   GtkWidget *window;
-  GtkWidget *band_label, *ant_label, *sm_label, *hbox1, *hbox2, *hbox3, *hbox4, *vbox, *button1, *button2, *button3, *button4;
+  GtkWidget *band_label, *ant_label, *sm_label, *pre_label, *hbox1, *hbox2, *hbox3, *hbox4, *hbox5, *vbox, *button1, *button2, *button3, *button4;
 
   gtk_init();
   window = gtk_window_new();
   gtk_window_set_title(GTK_WINDOW(window), "Antenna Status");
-  gtk_window_set_default_size(GTK_WINDOW(window), 300, 80);
+  gtk_window_set_default_size(GTK_WINDOW(window), 300, 100);
 
   band_label = gtk_label_new("Band:");
   gtk_label_set_xalign(GTK_LABEL(band_label), 0.0); // 0 = left, 1 = right
@@ -291,6 +328,7 @@ int main(int argc, char *argv[]) {
   hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   hbox3 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   hbox4 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+  hbox5 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   
   vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
 
@@ -317,10 +355,18 @@ int main(int argc, char *argv[]) {
   gtk_box_append(GTK_BOX(hbox4), button3);
   gtk_box_append(GTK_BOX(hbox4), button4);
 
+  pre_label = gtk_label_new("160 m preamlifier:     ");
+  gtk_label_set_xalign(GTK_LABEL(pre_label), 0.0); // 0 = left, 1 = right
+  button5 = gtk_button_new_with_label("OFF");
+  gtk_box_append(GTK_BOX(hbox5), pre_label);
+  gtk_box_append(GTK_BOX(hbox5), button5);
+  set_preamp_state(0); // off by default
+
   gtk_box_append(GTK_BOX(vbox), hbox1);
   gtk_box_append(GTK_BOX(vbox), hbox2);
   gtk_box_append(GTK_BOX(vbox), hbox3);
   gtk_box_append(GTK_BOX(vbox), hbox4);
+  gtk_box_append(GTK_BOX(vbox), hbox5);
 
   gtk_window_set_child(GTK_WINDOW(window), vbox);
 
@@ -328,6 +374,8 @@ int main(int argc, char *argv[]) {
   g_signal_connect(button2, "clicked", G_CALLBACK(bog_sw), NULL);
   g_signal_connect(button3, "clicked", G_CALLBACK(bog_nw), NULL);
   g_signal_connect(button4, "clicked", G_CALLBACK(bog_se), NULL);
+  g_signal_connect(button5, "clicked", G_CALLBACK(set_preamp), NULL);
+
 
   if((fd = open(DEVICE, O_RDWR)) < 0) {
     fprintf(stderr, "Can't open device.\n");
