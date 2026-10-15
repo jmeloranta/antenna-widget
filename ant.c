@@ -30,6 +30,9 @@
 // Device for BM5
 #define DEVICE "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B003ISA1-if00-port0"
 
+// Device for USB relay controlling the 160m preamp (relay type: DSD TECH SH-UR01A)
+#define DEVICE2 "...."
+
 // Update every 100 msec
 #define UPDATE 100
 
@@ -43,32 +46,53 @@ char *stack_match[] = {"No antenna", "Top antenna", "Mid antenna", "Top+mid ante
 
 GtkWidget *button5;
 
-/*
- * Turn 160 m preamp on / off by turning the power on / off with H5080 smart plug
- * using bluetooth. KD9SV preamp has only a manual switch, which cannot be controlled with computer.
- *
- * This program uses external program called rs (modified from python code) to do the actual work. Use that program
- * to get the key from the plug and enter it below (in hex). To get rs working, you will need the bluetooth
- * MAC address for the plug (see rs.c).
- *
- */
-
-#define RS "/usr/local/bin/rs"
-
-#define KEY1 "0xff"
-#define KEY2 "0xff"
-#define KEY3 "0xff"
+void set_tty_relay(int fd2) {
+  
+  struct termios param;
+  
+  if(tcgetattr(fd2, &param) < 0) {
+    fprintf(stderr, "Status get failed.\n");
+    exit(1);
+  }
+  
+  param.c_cflag &= ~PARENB;
+  param.c_cflag &= ~CSTOPB;
+  param.c_cflag |= CS8;
+  param.c_cflag &= ~CRTSCTS;
+  param.c_cflag |= CREAD | CLOCAL;
+  param.c_lflag &= ~ICANON;
+  param.c_lflag &= ~ECHO;
+  param.c_lflag &= ~ECHOE;
+  param.c_lflag &= ~ECHONL;
+  param.c_lflag &= ~ISIG;
+  param.c_iflag &= ~(IXON | IXOFF | IXANY);
+  param.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);  
+  param.c_oflag &= ~OPOST;
+  param.c_oflag &= ~ONLCR;
+  cfsetispeed(&param, B9600);
+  cfsetospeed(&param, B9600);
+  
+  if(tcsetattr(fd2, TCSANOW, &param) < 0) {
+    fprintf(stderr, "Status set failed (relay).\n");
+    exit(1);
+  }
+}
 
 void set_preamp_state(int state) {
 
-  char buf[512];
+  static char fd2 = -1;
 
-  if(!state) sprintf(buf, "%s off %s %s %s", RS, KEY1, KEY2, KEY3);
-  else sprintf(buf, "%s on %s %s %s", RS, KEY1, KEY2, KEY3);
-  puts(buf);
-//  system(buf);
+  if(fd2 == -1) {
+    if((fd2 = open(DEVICE2, O_RDWR)) < 0) {
+      fprintf(stderr, "Can't open device (USB relay).\n");
+      exit(1);
+    }
+    set_tty_relay(fd2);
+  }
+  if(state == 1) write(fd2, "AT+CH1=1", 8);
+  else write(fd2, "AT+CH1=1", 8);
 }
-
+  
 void set_preamp(GtkWidget *win, gpointer data) {
 
   static char stat = 0;
@@ -133,7 +157,7 @@ int parse_packet(char *str, struct packet *packet) {
   return 0;
 }
 
-void set_tty() {
+void set_tty_bm5() {
   
   struct termios param;
   
@@ -160,7 +184,7 @@ void set_tty() {
   cfsetospeed(&param, B57600);
   
   if(tcsetattr(fd, TCSANOW, &param) < 0) {
-    fprintf(stderr, "Status set failed.\n");
+    fprintf(stderr, "Status set failed (bm5).\n");
     exit(1);
   }
 }
@@ -378,10 +402,10 @@ int main(int argc, char *argv[]) {
 
 
   if((fd = open(DEVICE, O_RDWR)) < 0) {
-    fprintf(stderr, "Can't open device.\n");
+    fprintf(stderr, "Can't open device (BM5).\n");
     exit(1);
   }
-  set_tty();
+  set_tty_bm5();
 
   bog_ne(NULL, NULL); // BOG NE is the default on start up
 
