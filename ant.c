@@ -31,7 +31,7 @@
 #define DEVICE_BM5 "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B003ISA1-if00-port0"
 
 // Device for USB relay controlling the 160m preamp (relay type: DSD TECH SH-UR01A)
-#define DEVICE_RELAY "...."
+#define DEVICE_RELAY "/dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_Controller_6e05ad07c81cf111b936c8e40f0f12f8-if00-port0"
 
 // Update every 50 msec
 #define UPDATE 50
