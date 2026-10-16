@@ -103,7 +103,7 @@ void set_preamp_state(int state) {
     setup_tty(fd, 9600);
   }
   if(state == 1) write(fd, "AT+CH1=1", 8);
-  else write(fd, "AT+CH1=1", 8);
+  else write(fd, "AT+CH1=0", 8);
 }
   
 void set_preamp(GtkWidget *win, gpointer data) {
@@ -378,6 +378,7 @@ int main(int argc, char *argv[]) {
   g_signal_connect(button4, "clicked", G_CALLBACK(bog_se), NULL);
   g_signal_connect(button5, "clicked", G_CALLBACK(set_preamp), NULL);
 
+  set_preamp_state(0); // default off
 
   if((fd_bm5 = open(DEVICE_BM5, O_RDWR)) < 0) {
     fprintf(stderr, "Can't open device (BM5).\n");
