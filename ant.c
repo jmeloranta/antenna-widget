@@ -357,7 +357,7 @@ int main(int argc, char *argv[]) {
   gtk_box_append(GTK_BOX(hbox4), button3);
   gtk_box_append(GTK_BOX(hbox4), button4);
 
-  pre_label = gtk_label_new("160 m preamlifier:     ");
+  pre_label = gtk_label_new("160 m preamplifier:     ");
   gtk_label_set_xalign(GTK_LABEL(pre_label), 0.0); // 0 = left, 1 = right
   button5 = gtk_button_new_with_label("OFF");
   gtk_box_append(GTK_BOX(hbox5), pre_label);
@@ -377,8 +377,6 @@ int main(int argc, char *argv[]) {
   g_signal_connect(button3, "clicked", G_CALLBACK(bog_nw), NULL);
   g_signal_connect(button4, "clicked", G_CALLBACK(bog_se), NULL);
   g_signal_connect(button5, "clicked", G_CALLBACK(set_preamp), NULL);
-
-  set_preamp_state(0); // default off
 
   if((fd_bm5 = open(DEVICE_BM5, O_RDWR)) < 0) {
     fprintf(stderr, "Can't open device (BM5).\n");
