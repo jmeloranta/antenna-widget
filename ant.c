@@ -28,13 +28,13 @@
 #define MAX_ANTENNAS 12
 
 // Device for BM5
-#define DEVICE "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B003ISA1-if00-port0"
+#define DEVICE_BM5 "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B003ISA1-if00-port0"
 
 // Device for USB relay controlling the 160m preamp (relay type: DSD TECH SH-UR01A)
-#define DEVICE2 "...."
+#define DEVICE_RELAY "...."
 
-// Update every 100 msec
-#define UPDATE 100
+// Update every 50 msec
+#define UPDATE 50
 
 char *antennas[] = {ANTENNA1, ANTENNA2, ANTENNA3, ANTENNA4, ANTENNA5, ANTENNA6, 
                     ANTENNA7, ANTENNA8, ANTENNA9, ANTENNA10, ANTENNA11, ANTENNA12};
@@ -45,12 +45,14 @@ char *stack_match[] = {"No antenna", "Top antenna", "Mid antenna", "Top+mid ante
                        "All antennas", "AUX", "Unknown", "Phase"}; 
 
 GtkWidget *button5;
+int fd_bm5, tx_on = 0, band_data = 0;
+GtkWidget *band, *ant, *sm;
 
-void set_tty_relay(int fd2) {
+void setup_tty(int fd, int brate) {
   
   struct termios param;
   
-  if(tcgetattr(fd2, &param) < 0) {
+  if(tcgetattr(fd, &param) < 0) {
     fprintf(stderr, "Status get failed.\n");
     exit(1);
   }
@@ -69,10 +71,21 @@ void set_tty_relay(int fd2) {
   param.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);  
   param.c_oflag &= ~OPOST;
   param.c_oflag &= ~ONLCR;
-  cfsetispeed(&param, B9600);
-  cfsetospeed(&param, B9600);
+  switch(brate) {
+    case 9600:
+      cfsetispeed(&param, B9600);
+      cfsetospeed(&param, B9600);
+    break;
+    case 57600:
+      cfsetispeed(&param, B57600);
+      cfsetospeed(&param, B57600);
+    break;
+  default:
+      fprintf(stderr, "Unknown baud rate.\n");
+      exit(1);
+  }
   
-  if(tcsetattr(fd2, TCSANOW, &param) < 0) {
+  if(tcsetattr(fd, TCSANOW, &param) < 0) {
     fprintf(stderr, "Status set failed (relay).\n");
     exit(1);
   }
@@ -80,17 +93,17 @@ void set_tty_relay(int fd2) {
 
 void set_preamp_state(int state) {
 
-  static char fd2 = -1;
+  static char fd = -1;
 
-  if(fd2 == -1) {
-    if((fd2 = open(DEVICE2, O_RDWR)) < 0) {
+  if(fd == -1) {
+    if((fd = open(DEVICE_RELAY, O_RDWR)) < 0) {
       fprintf(stderr, "Can't open device (USB relay).\n");
       exit(1);
     }
-    set_tty_relay(fd2);
+    setup_tty(fd, 9600);
   }
-  if(state == 1) write(fd2, "AT+CH1=1", 8);
-  else write(fd2, "AT+CH1=1", 8);
+  if(state == 1) write(fd, "AT+CH1=1", 8);
+  else write(fd, "AT+CH1=1", 8);
 }
   
 void set_preamp(GtkWidget *win, gpointer data) {
@@ -119,9 +132,6 @@ void set_preamp(GtkWidget *win, gpointer data) {
 char *bogs[] = {"[R29T09H060606060402030203020301]\r", "[R29T09H070707070402030203020301]\r",
                 "[R29T09H080808080402030203020301]\r", "[R29T09H090909090402030203020301]\r"};
 
-int fd, tx_on = 0, band_data = 0;
-GtkWidget *band, *ant, *sm;
-
 struct packet {
   unsigned char cmd;
   unsigned char dst;
@@ -136,7 +146,7 @@ int read_untilcr(char *buf, int maxlen) {
   int pos = 0, bytes_rd;
   
   while(1) {
-    if((bytes_rd = read(fd, buf + pos, 1)) < 0) return -1;
+    if((bytes_rd = read(fd_bm5, buf + pos, 1)) < 0) return -1;
     if(bytes_rd == 0) {
       sleep(1); // could be less than 1sec
       continue;
@@ -155,38 +165,6 @@ int parse_packet(char *str, struct packet *packet) {
   memset((void *) packet, 0, sizeof(struct packet));
   if(sscanf(str, "[T%2xR%2x%2xH%2xM%[^]]", &(packet->cmd), &(packet->dst), &(packet->src), &(packet->channel), &(packet->data)) != 5) return -1;
   return 0;
-}
-
-void set_tty_bm5() {
-  
-  struct termios param;
-  
-  if(tcgetattr(fd, &param) < 0) {
-    fprintf(stderr, "Status get failed.\n");
-    exit(1);
-  }
-  
-  param.c_cflag &= ~PARENB;
-  param.c_cflag &= ~CSTOPB;
-  param.c_cflag |= CS8;
-  param.c_cflag &= ~CRTSCTS;
-  param.c_cflag |= CREAD | CLOCAL;
-  param.c_lflag &= ~ICANON;
-  param.c_lflag &= ~ECHO;
-  param.c_lflag &= ~ECHOE;
-  param.c_lflag &= ~ECHONL;
-  param.c_lflag &= ~ISIG;
-  param.c_iflag &= ~(IXON | IXOFF | IXANY);
-  param.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);  
-  param.c_oflag &= ~OPOST;
-  param.c_oflag &= ~ONLCR;
-  cfsetispeed(&param, B57600);
-  cfsetospeed(&param, B57600);
-  
-  if(tcsetattr(fd, TCSANOW, &param) < 0) {
-    fprintf(stderr, "Status set failed (bm5).\n");
-    exit(1);
-  }
 }
 
 static gboolean update_band_info(void *asd) {
@@ -286,7 +264,7 @@ void bog_ne(GtkWidget *win, gpointer data) {
   if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG NE selected\n");
-    write(fd, bogs[0], strlen(bogs[0]));
+    write(fd_bm5, bogs[0], strlen(bogs[0]));
   }
 }
 
@@ -295,7 +273,7 @@ void bog_sw(GtkWidget *win, gpointer data) {
   if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG SW selected\n");
-    write(fd, bogs[1], strlen(bogs[1]));
+    write(fd_bm5, bogs[1], strlen(bogs[1]));
   }
 }
 
@@ -304,7 +282,7 @@ void bog_nw(GtkWidget *win, gpointer data) {
   if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG NW selected\n");
-    write(fd, bogs[2], strlen(bogs[2]));
+    write(fd_bm5, bogs[2], strlen(bogs[2]));
   }
 }
 
@@ -313,7 +291,7 @@ void bog_se(GtkWidget *win, gpointer data) {
   if(band_data < 60) return;
   if(!tx_on) {
     printf("BOG SE selected\n");
-    write(fd, bogs[3], strlen(bogs[3]));
+    write(fd_bm5, bogs[3], strlen(bogs[3]));
   }
 }
 
@@ -401,11 +379,11 @@ int main(int argc, char *argv[]) {
   g_signal_connect(button5, "clicked", G_CALLBACK(set_preamp), NULL);
 
 
-  if((fd = open(DEVICE, O_RDWR)) < 0) {
+  if((fd_bm5 = open(DEVICE_BM5, O_RDWR)) < 0) {
     fprintf(stderr, "Can't open device (BM5).\n");
     exit(1);
   }
-  set_tty_bm5();
+  setup_tty(fd_bm5, 57600);
 
   bog_ne(NULL, NULL); // BOG NE is the default on start up
 
@@ -416,6 +394,6 @@ int main(int argc, char *argv[]) {
   while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0) // Main iteration loop
     g_main_context_iteration(NULL, TRUE);
 
-  close(fd);
+  close(fd_bm5);
   return 0;
 }
